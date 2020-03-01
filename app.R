@@ -16,6 +16,8 @@ rawdata <- read.csv(file = "hurdat2-formatted.txt")
 #clear up data a little bit
 rawdata$Hurricane <- as.character(rawdata$Hurricane)
 rawdata$Name <- as.character(rawdata$Name)
+rawdata$Date <- as.character(rawdata$Date)
+rawdata$Time <- as.character(rawdata$Time)
 rawdata$RecordID <- as.character(rawdata$RecordID)
 rawdata$Status <- as.character(rawdata$Status)
 rawdata$Lat <- as.numeric(rawdata$Lat)
@@ -40,16 +42,12 @@ rawdata$Name[which(rawdata$Name == "UNNAMED")] <-
         rawdata$Year[which(rawdata$Name == "UNNAMED")], 
         "-", rawdata$CycNum[which(rawdata$Name == "UNNAMED")]
   )
-  
-#get the day the cyclone occurred
-rawdata$Day <- lapply(rawdata$Date, function(x){
-  as.integer(substr(x,nchar(x)-1,nchar(x)))
-})
 
-#get the month the cyclone occurred
-rawdata$Month <- lapply(rawdata$Date, function(x){
-  as.integer(substr(x,nchar(x)-3,nchar(x)-2))
-})
+#make hurricanes with only one zero have four instead(formatting reasons)
+rawdata$Time[which(rawdata$Time == "0")]<- "0000"
+
+#Convert the date column to correct format
+rawdata$Date <- as.Date(rawdata$Date, format = "%Y%m%d")
 
 #get the Minute the cyclone occurred
 rawdata$Minute <- lapply(rawdata$Time, function(x){
@@ -60,6 +58,12 @@ rawdata$Minute <- lapply(rawdata$Time, function(x){
 rawdata$Hour <- lapply(rawdata$Time, function(x){
   as.integer(substr(x,nchar(x)-3,nchar(x)-2))
 })
+
+#Convert the date column and times to datetime format
+rawdata$DateandTimes <- as.POSIXct(paste(rawdata$Date, rawdata$Hour, rawdata$Minute), format = "%Y-%m-%d %H%M", tz="GMT")
+
+#clear up data a bit
+rawdata$DateandTimes <- as.character(rawdata$DateandTimes)
 
 #get top 10 list
 temp <- rawdata[rev(order(rawdata$MaxWind)),]
@@ -89,6 +93,10 @@ ui <- dashboardPage(
           ),
           uiOutput("picker")
       ),
+    ),
+    fluidRow(
+      box(width = 6, title = "Hurricane List", DT::dataTableOutput("orderHurricane")),
+      box(width = 6, selectInput("orderFilter", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")))
     )
   )
 )
@@ -131,6 +139,49 @@ server <- function(input, output) {
     map <- addMarkers(map = map, data = rawdataFiltered(), lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
     map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
     map
+  })
+  
+  orderdataFiltered <- reactive({
+    if(input$orderFilter == "Chronologically"){
+      chronological <- as.data.frame(lapply(rawdata, unlist))
+      attach(chronological)
+      chronological <- chronological[order(DateandTimes),]
+      detach(chronological)
+      chronological <- subset(chronological, select = c(Hurricane, Name, DateandTimes))
+      orderdataFiltered <- chronological
+    }
+    else if(input$orderFilter == "Alphabetically"){
+      alphabetic <- as.data.frame(lapply(rawdata, unlist))
+      attach(alphabetic)
+      alphabetic <- alphabetic[order(Name),]
+      detach(alphabetic)
+      alphabetic <- subset(alphabetic, select = c(Hurricane, Name, DateandTimes))
+      alphabetic <- alphabetic[!duplicated(alphabetic$Hurricane),]
+      orderdataFiltered <- alphabetic
+    }
+    else if(input$orderFilter == "Max Wind Speed"){
+      mWindSpeed <- as.data.frame(lapply(rawdata, unlist))
+      attach(mWindSpeed)
+      mWindSpeed <- mWindSpeed[order(-MaxWind),]
+      detach(mWindSpeed)
+      mWindSpeed <- subset(mWindSpeed, select = c(Hurricane, Name, MaxWind))
+      mWindSpeed <- mWindSpeed[!duplicated(mWindSpeed$Hurricane),]
+      orderdataFiltered <- mWindSpeed
+    }
+    else if(input$orderFilter == "Minimum Pressure"){
+      mPressure <- as.data.frame(lapply(rawdata, unlist))
+      attach(mPressure)
+      mPressure <- mPressure[order(MinPress),]
+      detach(mPressure)
+      mPressure <- subset(mPressure, select = c(Hurricane, Name, MinPress))
+      mPressure <- mPressure[!duplicated(mPressure$Hurricane),]
+      orderdataFiltered <- mPressure
+    }
+    orderdataFiltered
+  })
+  
+  output$orderHurricane <- DT::renderDataTable({
+    as.data.frame(orderdataFiltered())
   })
 }
 
