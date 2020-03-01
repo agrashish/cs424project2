@@ -58,17 +58,31 @@ ui <- dashboardPage(
   dashboardBody(
     fluidRow(
       box(width = 6, title = "Atlantic Hurricane Map", leafletOutput("atlanticMap")),
-      selectInput("pickFilter", "Select How to Filter Hurricanes: ", choices = c("All", "By Year")),
+      box(width = 6, selectInput("pickFilter", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10"))),
     )
   )
 )
 
 server <- function(input, output) {
+  rawdataFiltered <- reactive({
+    if(input$pickFilter == "Current Season") {
+      rawdataFiltered <- rawdata[rawdata$Year == 2018,]
+    }
+    else if(input$pickFilter == "All") {
+      rawdataFiltered <- rawdata[rawdata$Year >= 2005,]
+    }
+    else if(input$pickFilter == "Top 10") {
+      rawdataFiltered <- head(rawdata[rev(order(rawdata$MaxWind)),], 10)
+      rownames(rawdataFiltered) <- c()
+    }
+    rawdataFiltered
+  })  
+  
   output$atlanticMap <- renderLeaflet({
     map <- leaflet()
     map <- addTiles(map)
-    map <- addMarkers(map = map, data = rawdata, lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
-    map <- addLayersControl(map = map, overlayGroups = rawdata$Hurricane)
+    map <- addMarkers(map = map, data = rawdataFiltered(), lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
+    map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
     map
   })
 }
