@@ -10,6 +10,17 @@ library(shinydashboard)
 library(ggplot2)
 library(leaflet)
 
+#read in data from csv
+rawdata <- read.csv(file = "hurdat2-formatted.txt")
+
+#clear up data a little bit
+rawdata$Hurricane <- as.character(rawdata$Hurricane)
+rawdata$Name <- as.character(rawdata$Name)
+rawdata$RecordID <- as.character(rawdata$RecordID)
+rawdata$Status <- as.character(rawdata$Status)
+rawdata$Lat <- as.numeric(rawdata$Lat)
+rawdata$Long <- as.numeric(rawdata$Long)
+
 
 ui <- dashboardPage(
   dashboardHeader(title = "CS 424 Project 2"),
