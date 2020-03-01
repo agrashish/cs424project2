@@ -34,6 +34,7 @@ rawdata$CycNum <- lapply(rawdata$Hurricane, function(x){
   as.integer(substr(x,nchar(x)-5,nchar(x)-4))
 })
 
+#make unnamed hurricanes display their year and number
 rawdata$Name[which(rawdata$Name == "UNNAMED")] <- 
   paste("Unnamed-", 
         rawdata$Year[which(rawdata$Name == "UNNAMED")], 
