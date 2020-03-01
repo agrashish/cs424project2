@@ -25,11 +25,27 @@ rawdata$Long <- as.numeric(rawdata$Long)
 ui <- dashboardPage(
   dashboardHeader(title = "CS 424 Project 2"),
   dashboardSidebar(),
-  dashboardBody()
+  dashboardBody(
+    fluidRow(
+      box(width = 6, title = "Atlantic Hurricane Map", leafletOutput("atlanticMap"))
+    )
+  )
 )
 
 server <- function(input, output) {
-
+  output$atlanticMap <- renderLeaflet({
+    map <- leaflet()
+    map <- addTiles(map)
+    map <- addMarkers(
+      map = map, data = rawdata, 
+      lat = ~Lat, lng = ~Long,
+      clusterOptions = markerClusterOptions()
+    )
+    map <- addLayersControl(
+      map = map, overlayGroups = rawdata$Hurricane
+    )
+    map
+  })
 }
 
 shinyApp(ui = ui, server = server)
