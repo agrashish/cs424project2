@@ -21,13 +21,27 @@ rawdata$Status <- as.character(rawdata$Status)
 rawdata$Lat <- as.numeric(rawdata$Lat)
 rawdata$Long <- as.numeric(rawdata$Long)
 
+#get the year of the hurricane from the start string
+rawdata$Year = lapply(rawdata$Hurricane, function(x){
+  as.integer(substr(x,nchar(x)-3,nchar(x)))
+})
+
+#trim the whitespaces from the name
+rawdata$Name <- lapply(rawdata$Name, trimws)
+
+#get the cyclone number of the hurricane from the start string
+rawdata$CycNum <- lapply(rawdata$Hurricane, function(x){
+  as.integer(substr(x,nchar(x)-5,nchar(x)-4))
+})
+
 
 ui <- dashboardPage(
   dashboardHeader(title = "CS 424 Project 2"),
   dashboardSidebar(),
   dashboardBody(
     fluidRow(
-      box(width = 6, title = "Atlantic Hurricane Map", leafletOutput("atlanticMap"))
+      box(width = 6, title = "Atlantic Hurricane Map", leafletOutput("atlanticMap")),
+      selectInput("pickFilter", "Select How to Filter Hurricanes: ", choices = c("All", "By Year")),
     )
   )
 )
@@ -36,14 +50,8 @@ server <- function(input, output) {
   output$atlanticMap <- renderLeaflet({
     map <- leaflet()
     map <- addTiles(map)
-    map <- addMarkers(
-      map = map, data = rawdata, 
-      lat = ~Lat, lng = ~Long,
-      clusterOptions = markerClusterOptions()
-    )
-    map <- addLayersControl(
-      map = map, overlayGroups = rawdata$Hurricane
-    )
+    map <- addMarkers(map = map, data = rawdata, lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
+    map <- addLayersControl(map = map, overlayGroups = rawdata$Hurricane)
     map
   })
 }
