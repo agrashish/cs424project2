@@ -1,0 +1,2 @@
+ssh -p 2222 g7@shiny.evl.uic.edu
+password; g7
