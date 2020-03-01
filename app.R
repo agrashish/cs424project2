@@ -129,7 +129,7 @@ server <- function(input, output) {
     map <- leaflet()
     map <- addTiles(map)
     map <- addMarkers(map = map, data = rawdataFiltered(), lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
-    #map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
+    map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
     map
   })
 }
