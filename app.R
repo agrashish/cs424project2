@@ -61,18 +61,51 @@ rawdata$Hour <- lapply(rawdata$Time, function(x){
   as.integer(substr(x,nchar(x)-3,nchar(x)-2))
 })
 
+#get top 10 list
+temp <- rawdata[rev(order(rawdata$MaxWind)),]
+temp <- head(temp[!duplicated(temp["Name"]),],10)
+rownames(temp) <- c()
+top10 <- rawdata[which(rawdata$Name %in% temp$Name),]
+top10 <- top10[rev(order(top10$MaxWind)),]
+
+#names of hurricanes that have year >= 2005
+names <- unique(rawdata[rawdata$Year >= 2005,]$Name)
+names <- sapply(names, function(x){x})
+
+#years >= 2005 in dataset
+years <- unique(rawdata$Year)
+years <- years[years >= 2005]
+
 ui <- dashboardPage(
   dashboardHeader(title = "CS 424 Project 2"),
   dashboardSidebar(),
   dashboardBody(
     fluidRow(
       box(width = 6, title = "Atlantic Hurricane Map", leafletOutput("atlanticMap")),
-      box(width = 6, selectInput("pickFilter", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10"))),
+      box(width = 6, 
+          selectInput(
+            "pickFilter", "Select How to Filter Hurricanes (since 2005): ", 
+            choices = c("Current Season", "All", "Year", "Individual", "Top 10")
+          ),
+          uiOutput("picker")
+      ),
     )
   )
 )
 
 server <- function(input, output) {
+  output$picker <- renderUI({
+    if(input$pickFilter == "Year") {
+      selectInput("userFilter", "Select Year", choices = years)
+    }
+    else if(input$pickFilter == "Individual") {
+      selectInput("userFilter", "Select Hurricane", choices = names)
+    }
+    else {
+      
+    }
+  })
+  
   rawdataFiltered <- reactive({
     if(input$pickFilter == "Current Season") {
       rawdataFiltered <- rawdata[rawdata$Year == 2018,]
@@ -80,9 +113,14 @@ server <- function(input, output) {
     else if(input$pickFilter == "All") {
       rawdataFiltered <- rawdata[rawdata$Year >= 2005,]
     }
+    else if(input$pickFilter == "Year") {
+      rawdataFiltered <- rawdata[rawdata$Year == input$userFilter,]
+    }
+    else if(input$pickFilter == "Individual") {
+      rawdataFiltered <- rawdata[rawdata$Name == input$userFilter,]
+    }
     else if(input$pickFilter == "Top 10") {
-      rawdataFiltered <- head(rawdata[rev(order(rawdata$MaxWind)),], 10)
-      rownames(rawdataFiltered) <- c()
+      rawdataFiltered <- top10
     }
     rawdataFiltered
   })  
@@ -91,7 +129,7 @@ server <- function(input, output) {
     map <- leaflet()
     map <- addTiles(map)
     map <- addMarkers(map = map, data = rawdataFiltered(), lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
-    map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
+    #map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
     map
   })
 }
