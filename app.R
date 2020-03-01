@@ -22,7 +22,7 @@ rawdata$Lat <- as.numeric(rawdata$Lat)
 rawdata$Long <- as.numeric(rawdata$Long)
 
 #get the year of the hurricane from the start string
-rawdata$Year <- lapply(rawdata$Hurricane, function(x){
+rawdata$Year = lapply(rawdata$Hurricane, function(x){
   as.integer(substr(x,nchar(x)-3,nchar(x)))
 })
 
@@ -40,6 +40,16 @@ rawdata$Name[which(rawdata$Name == "UNNAMED")] <-
         rawdata$Year[which(rawdata$Name == "UNNAMED")], 
         "-", rawdata$CycNum[which(rawdata$Name == "UNNAMED")]
   )
+  
+#get the day the cyclone occurred
+rawdata$Day <- lapply(rawdata$Date, function(x){
+  as.integer(substr(x,nchar(x)-1,nchar(x)))
+})
+
+#get the month the cyclone occurred
+rawdata$Month <- lapply(rawdata$Date, function(x){
+  as.integer(substr(x,nchar(x)-3,nchar(x)-2))
+})
 
 
 ui <- dashboardPage(
@@ -58,7 +68,7 @@ server <- function(input, output) {
     map <- leaflet()
     map <- addTiles(map)
     map <- addMarkers(map = map, data = rawdata, lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
-    #map <- addLayersControl(map = map, overlayGroups = rawdata$Hurricane)
+    map <- addLayersControl(map = map, overlayGroups = rawdata$Hurricane)
     map
   })
 }
