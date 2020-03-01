@@ -51,6 +51,15 @@ rawdata$Month <- lapply(rawdata$Date, function(x){
   as.integer(substr(x,nchar(x)-3,nchar(x)-2))
 })
 
+#get the Minute the cyclone occurred
+rawdata$Minute <- lapply(rawdata$Time, function(x){
+  as.integer(substr(x,nchar(x)-1,nchar(x)))
+})
+
+#get the Hour the cyclone occurred
+rawdata$Hour <- lapply(rawdata$Time, function(x){
+  as.integer(substr(x,nchar(x)-3,nchar(x)-2))
+})
 
 ui <- dashboardPage(
   dashboardHeader(title = "CS 424 Project 2"),
