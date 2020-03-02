@@ -97,6 +97,10 @@ ui <- dashboardPage(
     fluidRow(
       box(width = 6, title = "Hurricane List", DT::dataTableOutput("orderHurricane")),
       box(width = 6, selectInput("orderFilter", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")))
+    ),
+    fluidRow(
+      box(width = 6, plotOutput("hurricanesYearlyHistogram")),
+      box(width = 6, plotOutput("hurricanesByStatusHistogram"))
     )
   )
 )
@@ -182,6 +186,28 @@ server <- function(input, output) {
   
   output$orderHurricane <- DT::renderDataTable({
     as.data.frame(orderdataFiltered())
+  })
+  
+  output$hurricanesYearlyHistogram <- renderPlot({
+    ## graph for total hurricanes in a year##
+    ##get rid of duplicates and greater than year:2005
+    temp <- rawdata[rev(order(rawdata$MaxWind)),]
+    temp <- temp[!duplicated(temp["Hurricane"]),]
+    temp <- temp[temp$Year >= 2005,]
+    year <- as.integer(temp$Year)
+    years<- factor(year)
+    p <- ggplot(temp) + aes(x = years) + geom_bar(color = "black", fill="blue") + theme_dark()
+    p
+  })
+  
+  output$hurricanesByStatusHistogram <- renderPlot({
+    ## graph for total hurricanes in a specific Status##
+    ##get rid of duplicates and greater than year:2005##
+    temp <- rawdata[rev(order(rawdata$MaxWind)),]
+    temp <- temp[!duplicated(temp["Hurricane"]),]
+    temp <- temp[temp$Year >= 2005,]
+    q <- ggplot(temp) + aes(x = Status) + geom_bar(color = "black", fill="blue")  + theme_dark()
+    q
   })
 }
 
