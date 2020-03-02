@@ -67,7 +67,7 @@ rawdata$DateandTimes <- as.character(rawdata$DateandTimes)
 
 #get top 10 list
 temp <- rawdata[rev(order(rawdata$MaxWind)),]
-temp <- head(temp[!duplicated(temp["Name"]),],10)
+temp <- head(temp[!duplicated(temp["Hurricane"]),],10)
 rownames(temp) <- c()
 top10 <- rawdata[which(rawdata$Name %in% temp$Name),]
 top10 <- top10[rev(order(top10$MaxWind)),]
