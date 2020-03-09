@@ -20,8 +20,28 @@ rawdata$Date <- as.character(rawdata$Date)
 rawdata$Time <- as.character(rawdata$Time)
 rawdata$RecordID <- as.character(rawdata$RecordID)
 rawdata$Status <- as.character(rawdata$Status)
-rawdata$Lat <- as.numeric(rawdata$Lat)
-rawdata$Long <- as.numeric(rawdata$Long)
+rawdata$Lat <- as.character(rawdata$Lat)
+rawdata$Long <- as.character(rawdata$Long)
+
+#replace lat strings with 'N' or 'S' to proper numeric
+rawdata$Lat <- sapply(rawdata$Lat, function(x) {
+  if(substr(x,nchar(x),nchar(x))[1] == 'N') {
+    as.numeric(substr(x,0,nchar(x)-1))
+  }
+  else {
+    - as.numeric(substr(x,0,nchar(x)-1))
+  }
+})
+
+#replace long strings with 'E' or 'W' to proper numeric
+rawdata$Long <- sapply(rawdata$Long, function(x) {
+  if(substr(x,nchar(x),nchar(x))[1] == 'E') {
+    as.numeric(substr(x,0,nchar(x)-1))
+  }
+  else {
+    - as.numeric(substr(x,0,nchar(x)-1))
+  }
+})
 
 #get the year of the hurricane from the start string
 rawdata$Year = lapply(rawdata$Hurricane, function(x){
@@ -31,16 +51,12 @@ rawdata$Year = lapply(rawdata$Hurricane, function(x){
 #trim the whitespaces from the name
 rawdata$Name <- lapply(rawdata$Name, trimws)
 
-#get the cyclone number of the hurricane from the start string
-rawdata$CycNum <- lapply(rawdata$Hurricane, function(x){
-  as.integer(substr(x,nchar(x)-5,nchar(x)-4))
-})
-
 #make unnamed hurricanes display their year and number
-rawdata$Name[which(rawdata$Name == "UNNAMED")] <- 
-  paste("Unnamed-", 
-        rawdata$Year[which(rawdata$Name == "UNNAMED")], 
-        "-", rawdata$CycNum[which(rawdata$Name == "UNNAMED")]
+rawdata$Name <- 
+  paste(rawdata$Name,
+        " (", 
+        rawdata$Hurricane, 
+        ")"
   )
 
 #make hurricanes with only one zero have four instead(formatting reasons)
@@ -69,7 +85,7 @@ rawdata$DateandTimes <- as.character(rawdata$DateandTimes)
 temp <- rawdata[rev(order(rawdata$MaxWind)),]
 temp <- head(temp[!duplicated(temp["Hurricane"]),],10)
 rownames(temp) <- c()
-top10 <- rawdata[which(rawdata$Name %in% temp$Name),]
+top10 <- rawdata[which(rawdata$Hurricane %in% temp$Hurricane),]
 top10 <- top10[rev(order(top10$MaxWind)),]
 
 #names of hurricanes that have year >= 2005
