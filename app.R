@@ -145,17 +145,15 @@ ui <- dashboardPage(
   dashboardSidebar(),
   dashboardBody(
     fluidRow(
-      box(width = 6, title = "Atlantic Hurricane Map", leafletOutput("atlanticMap")),
-      box(width = 6, 
-          selectInput(
-            "pickFilter", "Select How to Filter Hurricanes (since 2005): ", 
-            choices = c("Current Season", "All", "Year", "Individual", "Top 10")
-          ),
-          uiOutput("picker")
-      ),
+      #Atlantic Map
+      box(width = 6, title = "Atlantic Hurricane Map", selectInput("pickFilter", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10")), uiOutput("picker"),leafletOutput("atlanticMap"),)
+      #Pacific Map
+      
     ),
     fluidRow(
+      #Atlantic
       box(width = 6, title = "Atlantic Hurricane List", selectInput("orderFilter", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")),DT::dataTableOutput("orderHurricane") ),
+      #Pacific
       box(width = 6, title = "Pacific Hurricane List", selectInput("orderFilter2", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")),DT::dataTableOutput("orderHurricane2") )
     ),
     fluidRow(
@@ -163,12 +161,12 @@ ui <- dashboardPage(
           mainPanel(width = 6, 
                     tabsetPanel(
                       tabPanel("(Alt)Hurricane by Year(2005-2018)",      
-                               ##yearlybarchart
+                               ##Atlantic year chart
                                box( width = 12,title = "Hurricane by Year", status = "primary", solidHeader = TRUE, plotOutput("hurricanesYearlyHistogram", height = 360)   
                                )
                       ),
                       tabPanel("(Alt)Hurricane by Status(2005-2018)",
-                               ##weedaybarchart
+                               ##Atlantic Status chart
                                box( width = 12,title = "Hurricane by Status", status = "primary", solidHeader = TRUE, plotOutput("hurricanesByStatusHistogram", height = 360)   
                                )
                       )
@@ -177,23 +175,18 @@ ui <- dashboardPage(
           mainPanel(width = 6, 
                     tabsetPanel(
                       tabPanel("(Pt)Hurricane by Year(2005-2018)",      
-                               ##yearlybarchart
+                               ##APacific year chart
                                box( width = 12,title = "Hurricane by Year", status = "primary", solidHeader = TRUE, plotOutput("hurricanesYearlyHistogramPacific", height = 360)   
                                )
                       ),
                       tabPanel("(Pt)Hurricane by Status(2005-2018)",
-                               ##weedaybarchart
+                               ##Pacific Status chart
                                box( width = 12,title = "Hurricane by Status", status = "primary", solidHeader = TRUE, plotOutput("hurricanesByStatusHistogramPacific", height = 360)   
                                )
                       )
                     )
           )
       )
-      
-      
-      
-      #box(width = 6, plotOutput("hurricanesYearlyHistogram")),
-      #box(width = 6, plotOutput("hurricanesByStatusHistogram"))
     )
   )
 )
