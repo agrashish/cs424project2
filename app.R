@@ -155,8 +155,8 @@ ui <- dashboardPage(
       ),
     ),
     fluidRow(
-      box(width = 6, title = "Hurricane List", DT::dataTableOutput("orderHurricane")),
-      box(width = 6, selectInput("orderFilter", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")))
+      box(width = 6, title = "Atlantic Hurricane List", selectInput("orderFilter", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")),DT::dataTableOutput("orderHurricane") ),
+      box(width = 6, title = "Pacific Hurricane List", selectInput("orderFilter2", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")),DT::dataTableOutput("orderHurricane2") )
     ),
     fluidRow(
       box(width = 12,
@@ -238,6 +238,7 @@ server <- function(input, output) {
     map
   })
   
+#for the first file
   orderdataFiltered <- reactive({
     if(input$orderFilter == "Chronologically"){
       chronological <- as.data.frame(lapply(rawdata, unlist))
@@ -277,8 +278,53 @@ server <- function(input, output) {
     orderdataFiltered
   })
   
+#for the second file
+  orderdataFiltered2 <- reactive({
+    if(input$orderFilter2 == "Chronologically"){
+      chronological <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      attach(chronological)
+      chronological <- chronological[order(DateandTimes),]
+      detach(chronological)
+      chronological <- subset(chronological, select = c(Hurricane, Name, DateandTimes))
+      orderdataFiltered2 <- chronological
+    }
+    else if(input$orderFilter2 == "Alphabetically"){
+      alphabetic <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      attach(alphabetic)
+      alphabetic <- alphabetic[order(Name),]
+      detach(alphabetic)
+      alphabetic <- subset(alphabetic, select = c(Hurricane, Name, DateandTimes))
+      alphabetic <- alphabetic[!duplicated(alphabetic$Hurricane),]
+      orderdataFiltered2 <- alphabetic
+    }
+    else if(input$orderFilter2 == "Max Wind Speed"){
+      mWindSpeed <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      attach(mWindSpeed)
+      mWindSpeed <- mWindSpeed[order(-MaxWind),]
+      detach(mWindSpeed)
+      mWindSpeed <- subset(mWindSpeed, select = c(Hurricane, Name, MaxWind))
+      mWindSpeed <- mWindSpeed[!duplicated(mWindSpeed$Hurricane),]
+      orderdataFiltered2 <- mWindSpeed
+    }
+    else if(input$orderFilter2 == "Minimum Pressure"){
+      mPressure <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      attach(mPressure)
+      mPressure <- mPressure[order(MinPress),]
+      detach(mPressure)
+      mPressure <- subset(mPressure, select = c(Hurricane, Name, MinPress))
+      mPressure <- mPressure[!duplicated(mPressure$Hurricane),]
+      orderdataFiltered2 <- mPressure
+    }
+    orderdataFiltered2
+  })
+  
+  
   output$orderHurricane <- DT::renderDataTable({
     as.data.frame(orderdataFiltered())
+  })
+  
+  output$orderHurricane2 <- DT::renderDataTable({
+    as.data.frame(orderdataFiltered2())
   })
   
   output$hurricanesYearlyHistogram <- renderPlot({
