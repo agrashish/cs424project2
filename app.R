@@ -80,6 +80,66 @@ names <- sapply(names, function(x){x})
 years <- unique(rawdata$Year)
 years <- years[years >= 2005]
 
+########### SECOND FILE ##############
+#read in second file
+rawdata2ndFile <- read.csv(file = "hurdat2Pacific-formatted.txt")
+
+#cleanup
+rawdata2ndFile$Hurricane <- as.character(rawdata2ndFile$Hurricane)
+rawdata2ndFile$Name <- as.character(rawdata2ndFile$Name)
+rawdata2ndFile$RecordID <- as.character(rawdata2ndFile$RecordID)
+rawdata2ndFile$Status <- as.character(rawdata2ndFile$Status)
+rawdata2ndFile$Lat <- as.numeric(rawdata2ndFile$Lat)
+rawdata2ndFile$Long <- as.numeric(rawdata2ndFile$Long)
+
+#get the year of the hurricane from the start string
+rawdata2ndFile$Year = lapply(rawdata2ndFile$Hurricane, function(x){
+  as.integer(substr(x,nchar(x)-3,nchar(x)))
+})
+
+#trim the whitespaces from the name
+rawdata2ndFile$Name <- lapply(rawdata2ndFile$Name, trimws)
+
+#get the cyclone number of the hurricane from the start string
+rawdata2ndFile$CycNum <- lapply(rawdata2ndFile$Hurricane, function(x){
+  as.integer(substr(x,nchar(x)-5,nchar(x)-4))
+})
+
+#make unnamed hurricanes display their year and number
+rawdata2ndFile$Name[which(rawdata2ndFile$Name == "UNNAMED")] <- 
+  paste("UNNAMED (", 
+        rawdata2ndFile$Hurricane[which(rawdata2ndFile$Name == "UNNAMED")], 
+        ")"
+  )
+
+#get the day the cyclone occurred
+rawdata2ndFile$Day <- lapply(rawdata2ndFile$Date, function(x){
+  as.integer(substr(x,nchar(x)-1,nchar(x)))
+})
+
+#get the month the cyclone occurred
+rawdata2ndFile$Month <- lapply(rawdata2ndFile$Date, function(x){
+  as.integer(substr(x,nchar(x)-3,nchar(x)-2))
+})
+
+#get the Minute the cyclone occurred
+rawdata2ndFile$Minute <- lapply(rawdata2ndFile$Time, function(x){
+  as.integer(substr(x,nchar(x)-1,nchar(x)))
+})
+
+#get the Hour the cyclone occurred
+rawdata2ndFile$Hour <- lapply(rawdata2ndFile$Time, function(x){
+  as.integer(substr(x,nchar(x)-3,nchar(x)-2))
+})
+
+#Convert the date column and times to datetime format
+rawdata2ndFile$DateandTimes <- as.POSIXct(paste(rawdata2ndFile$Date, rawdata2ndFile$Hour, rawdata2ndFile$Minute), format = "%Y-%m-%d %H%M", tz="GMT")
+
+#clear up data a bit
+rawdata2ndFile$DateandTimes <- as.character(rawdata2ndFile$DateandTimes)
+
+######################################
+
 ui <- dashboardPage(
   dashboardHeader(title = "CS 424 Project 2"),
   dashboardSidebar(),
@@ -99,8 +159,41 @@ ui <- dashboardPage(
       box(width = 6, selectInput("orderFilter", "Select how to Order the Hurricane List: ", choices = c("Chronologically", "Alphabetically", "Max Wind Speed", "Minimum Pressure")))
     ),
     fluidRow(
-      box(width = 6, plotOutput("hurricanesYearlyHistogram")),
-      box(width = 6, plotOutput("hurricanesByStatusHistogram"))
+      box(width = 12,
+          mainPanel(width = 6, 
+                    tabsetPanel(
+                      tabPanel("(Alt)Hurricane by Year(2005-2018)",      
+                               ##yearlybarchart
+                               box( width = 12,title = "Hurricane by Year", status = "primary", solidHeader = TRUE, plotOutput("hurricanesYearlyHistogram", height = 360)   
+                               )
+                      ),
+                      tabPanel("(Alt)Hurricane by Status(2005-2018)",
+                               ##weedaybarchart
+                               box( width = 12,title = "Hurricane by Status", status = "primary", solidHeader = TRUE, plotOutput("hurricanesByStatusHistogram", height = 360)   
+                               )
+                      )
+                    )
+          ),
+          mainPanel(width = 6, 
+                    tabsetPanel(
+                      tabPanel("(Pt)Hurricane by Year(2005-2018)",      
+                               ##yearlybarchart
+                               box( width = 12,title = "Hurricane by Year", status = "primary", solidHeader = TRUE, plotOutput("hurricanesYearlyHistogramPacific", height = 360)   
+                               )
+                      ),
+                      tabPanel("(Pt)Hurricane by Status(2005-2018)",
+                               ##weedaybarchart
+                               box( width = 12,title = "Hurricane by Status", status = "primary", solidHeader = TRUE, plotOutput("hurricanesByStatusHistogramPacific", height = 360)   
+                               )
+                      )
+                    )
+          )
+      )
+      
+      
+      
+      #box(width = 6, plotOutput("hurricanesYearlyHistogram")),
+      #box(width = 6, plotOutput("hurricanesByStatusHistogram"))
     )
   )
 )
@@ -209,6 +302,28 @@ server <- function(input, output) {
     q <- ggplot(temp) + aes(x = Status) + geom_bar(color = "black", fill="blue")  + theme_dark()
     q
   })
+  
+  output$hurricanesYearlyHistogramPacific <- renderPlot({
+    ## graph for total hurricanes in a year##
+    ##get rid of duplicates and greater than year:2005
+    temp2 <- rawdata2ndFile[rev(order(rawdata2ndFile$MaxWind)),]
+    temp2 <- temp2[!duplicated(temp2["Hurricane"]),]
+    temp2 <- temp2[temp2$Year >= 2005,]
+    year2 <- as.integer(temp2$Year)
+    years2<- factor(year2)
+    p <- ggplot(temp2) + aes(x = years2) + geom_bar(color = "black", fill="maroon") + theme_dark()
+    p
+  })
+  
+  output$hurricanesByStatusHistogramPacific <- renderPlot({
+    ## graph for total hurricanes in a specific Status##
+    temp2 <- rawdata2ndFile[rev(order(rawdata2ndFile$MaxWind)),]
+    temp2 <- temp2[!duplicated(temp2["Hurricane"]),]
+    temp2 <- temp2[temp2$Year >= 2005,]
+    q <- ggplot(temp2) + aes(x = Status) + geom_bar(color = "black", fill="maroon")  + theme_dark()
+    q
+  })
+  
 }
 
 shinyApp(ui = ui, server = server)
