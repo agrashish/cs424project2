@@ -97,6 +97,8 @@ names <- sapply(names, function(x){x})
 years <- unique(rawdata$Year)
 years <- years[years >= 2005]
 
+rawdata$factors <- as.factor(rawdata$Hurricane)
+
 ########### SECOND FILE ##############
 #read in second file
 rawdata2ndFile <- read.csv(file = "hurdat2Pacific-formatted.txt")
@@ -243,7 +245,11 @@ server <- function(input, output) {
   output$atlanticMap <- renderLeaflet({
     map <- leaflet()
     map <- addTiles(map)
-    map <- addMarkers(map = map, data = rawdataFiltered(), lat = ~Lat, lng = ~Long, clusterOptions = markerClusterOptions())
+    pal <- colorFactor(topo.colors(length(unique(rawdata$Hurricane))), rawdata$factors)
+    map <- addCircleMarkers(map = map, data = rawdataFiltered(), group = ~Name, lat = ~Lat, lng = ~Long, color = ~pal(factors), radius = ~2*log(MaxWind))
+    for(factor in levels(rawdataFiltered()$factors)) {
+      map <- addPolylines(map, data=rawdataFiltered()[rawdataFiltered()$factors==factor,], lat=~Lat, lng=~Long, color = ~pal(factors), weight = 1, group = ~Name)
+    }
     map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
     map
   })
