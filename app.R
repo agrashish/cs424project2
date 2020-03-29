@@ -205,7 +205,7 @@ ui <- dashboardPage(
         selectInput(
           "pickFilter", 
           "Select How to Filter Hurricanes (since 2005): ", 
-          choices = c("Current Season", "All", "Year", "Individual", "Top 10")
+          choices = c("Current Season", "All", "Year", "Individual", "Top 10", "Max Wind Speed", "Minimum Pressure")
         ),
         checkboxInput(
           "filterByLandfall",
@@ -221,7 +221,7 @@ ui <- dashboardPage(
         leafletOutput("atlanticMap")
       ),
       #Pacific Map
-      box(width = 6, title = "Pacific Hurricane Map", selectInput("pickFilter2", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10")), uiOutput("picker2"),leafletOutput("pacificMap"),)
+      box(width = 6, title = "Pacific Hurricane Map", selectInput("pickFilter2", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10", "Max Wind Speed", "Minimum Pressure")), uiOutput("picker2"),leafletOutput("pacificMap"),)
     ),
     fluidRow(
       #Atlantic
@@ -322,6 +322,25 @@ server <- function(input, output) {
     else if(input$pickFilter == "Top 10") {
       rawdataFiltered <- top10
     }
+    else if(input$pickFilter == "Max Wind Speed"){
+      mWindSpeed <- as.data.frame(lapply(rawdata, unlist))
+      attach(mWindSpeed)
+      mWindSpeed <- mWindSpeed[order(-MaxWind),]
+      detach(mWindSpeed)
+      comparison <- head(mWindSpeed, 1)
+      mWindSpeed <- mWindSpeed[mWindSpeed$Hurricane == comparison$Hurricane,]
+      rawdataFiltered <- mWindSpeed
+    }
+    else if(input$pickFilter == "Minimum Pressure"){
+      rawdata <- rawdata[rawdata$MinPress > 0,]
+      mPressure <- as.data.frame(lapply(rawdata, unlist))
+      attach(mPressure)
+      mPressure <- mPressure[order(MinPress),]
+      detach(mPressure)
+      comparison <- head(mPressure, 1)
+      mPressure <- mPressure[mPressure$Hurricane == comparison$Hurricane,]
+      rawdataFiltered <- mPressure
+    }
     rawdataFiltered
   })  
   
@@ -341,6 +360,25 @@ server <- function(input, output) {
     }
     else if(input$pickFilter2 == "Top 10") {
       rawdataFiltered2 <- top10
+    }
+    else if(input$pickFilter2 == "Max Wind Speed"){
+      mWindSpeed <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      attach(mWindSpeed)
+      mWindSpeed <- mWindSpeed[order(-MaxWind),]
+      detach(mWindSpeed)
+      comparison <- head(mWindSpeed, 1)
+      mWindSpeed <- mWindSpeed[mWindSpeed$Hurricane == comparison$Hurricane,]
+      rawdataFiltered2 <- mWindSpeed
+    }
+    else if(input$pickFilter2 == "Minimum Pressure"){
+      rawdata2ndFile <- rawdata2ndFile[rawdata2ndFile$MinPress > 0,]
+      mPressure <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      attach(mPressure)
+      mPressure <- mPressure[order(MinPress),]
+      detach(mPressure)
+      comparison <- head(mPressure, 1)
+      mPressure <- mPressure[mPressure$Hurricane == comparison$Hurricane,]
+      rawdataFiltered2 <- mPressure
     }
     rawdataFiltered2
   })  
@@ -400,6 +438,7 @@ server <- function(input, output) {
       orderdataFiltered <- mWindSpeed
     }
     else if(input$orderFilter == "Minimum Pressure"){
+      rawdata <- rawdata[rawdata$MinPress > 0,]
       mPressure <- as.data.frame(lapply(rawdata, unlist))
       attach(mPressure)
       mPressure <- mPressure[order(MinPress),]
@@ -440,6 +479,7 @@ server <- function(input, output) {
       orderdataFiltered2 <- mWindSpeed
     }
     else if(input$orderFilter2 == "Minimum Pressure"){
+      rawdata2ndFile <- rawdata2ndFile[rawdata2ndFile$MinPress > 0,]
       mPressure <- as.data.frame(lapply(rawdata2ndFile, unlist))
       attach(mPressure)
       mPressure <- mPressure[order(MinPress),]
