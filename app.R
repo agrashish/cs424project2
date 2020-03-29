@@ -23,6 +23,17 @@ rawdata$Status <- as.character(rawdata$Status)
 rawdata$Lat <- as.character(rawdata$Lat)
 rawdata$Long <- as.character(rawdata$Long)
 
+############ivans data frame
+newtestdata1stFile <- rawdata
+
+temp1maxwind <- newtestdata1stFile[rev(order(newtestdata1stFile$MaxWind)),]
+temp1maxwind$Date <- as.character(temp1maxwind$Date)
+temp1maxwind$Date <- as.Date(temp1maxwind[["Date"]], "%Y%m%d")
+
+temp1maxwind$Year <- as.numeric(format(temp1maxwind$Date,'%Y'))
+temp1maxwind$Month <- as.numeric(format(temp1maxwind$Date,'%m'))
+temp1maxwind$Day <- as.numeric(format(temp1maxwind$Date,'%d'))
+
 #replace lat strings with 'N' or 'S' to proper numeric
 rawdata$Lat <- sapply(rawdata$Lat, function(x) {
   if(substr(x,nchar(x),nchar(x))[1] == 'N') {
@@ -110,6 +121,16 @@ rawdata2ndFile$RecordID <- as.character(rawdata2ndFile$RecordID)
 rawdata2ndFile$Status <- as.character(rawdata2ndFile$Status)
 rawdata2ndFile$Lat <- as.numeric(rawdata2ndFile$Lat)
 rawdata2ndFile$Long <- as.numeric(rawdata2ndFile$Long)
+
+#Ivans data Frame
+newtestdata2ndFile <- rawdata2ndFile
+temp2maxwind <- newtestdata2ndFile
+temp2maxwind$Date <- as.character(temp2maxwind$Date)
+temp2maxwind$Date <- as.Date(temp2maxwind[["Date"]], "%Y%m%d")
+
+temp2maxwind$Year <- as.numeric(format(temp2maxwind$Date,'%Y'))
+temp2maxwind$Month <- as.numeric(format(temp2maxwind$Date,'%m'))
+temp2maxwind$Day <- as.numeric(format(temp2maxwind$Date,'%d'))
 
 #get the year of the hurricane from the start string
 rawdata2ndFile$Year = lapply(rawdata2ndFile$Hurricane, function(x){
@@ -208,7 +229,11 @@ ui <- dashboardPage(
                     )
           )
       )
-    )
+    ),
+    fluidRow(box(width = 4, title= "Atlantic Max windSpeeds", selectInput("AtlanticPick", "Select Year",choices = c(unique(temp1maxwind$Year))),DT::dataTableOutput("AtlanticPlot") ),
+             box(width = 4, title = "Atlantic and Pacific Max WindSpeed",DT::dataTableOutput("AtlPacPlot")),
+             box(width = 4, title= "Pacific Max windSpeeds", selectInput("PacificPick", "Select Year",choices = c(unique(temp2maxwind$Year))),DT::dataTableOutput("PacificPlot"))
+             )
   )
 )
 
@@ -436,6 +461,20 @@ server <- function(input, output) {
     temp2 <- temp2[temp2$Year >= 2005,]
     q <- ggplot(temp2) + aes(x = Status) + geom_bar(color = "black", fill="maroon")  + theme_dark()
     q
+  })
+  
+  pickAtl <- reactive({
+    temp1maxwind <- temp1maxwind[temp1maxwind$Year == input$AtlanticPick,]
+  })
+  
+  output$AtlanticPlot <- renderPlot({
+    r1 <- aggregate(pickAtl$MaxWind~pickAtl$Date,pickAtl, max)
+    colnames(r1) <- c('date', 'wind')
+    r1$wind <- as.integer(r1$wind)
+    #r
+    
+    windplot1 <- ggplot(r1, aes(x= date, y= wind))  + geom_point() + geom_line(color='blue') + scale_x_date(date_labels = " %b %d") + theme(axis.text.x = element_text(angle = 0)) 
+    windplot1
   })
   
 }
