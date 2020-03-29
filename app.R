@@ -262,8 +262,8 @@ ui <- dashboardPage(
       )
     ),
     fluidRow(box(width = 4, title= "Atlantic Max windSpeeds", selectInput("AtlanticPick", "Select Year",choices = c(unique(temp1maxwind$Year))),plotOutput("AtlanticPlot") ),
-             box(width = 4, title = "Atlantic and Pacific Max WindSpeed",DT::dataTableOutput("AtlPacPlot")),
-             box(width = 4, title= "Pacific Max windSpeeds", selectInput("PacificPick", "Select Year",choices = c(unique(temp2maxwind$Year))),DT::dataTableOutput("PacificPlot"))
+             box(width = 4, title = "Atlantic and Pacific Max WindSpeed",plotOutput("AtlPacPlot")),
+             box(width = 4, title= "Pacific Max windSpeeds", selectInput("PacificPick", "Select Year",choices = c(unique(temp2maxwind$Year))),plotOutput("PacificPlot"))
              )
   )
 )
@@ -515,6 +515,38 @@ server <- function(input, output) {
     windplot1 <- ggplot(r1, aes(x= date, y= wind))  + geom_point() + geom_line(color='blue') + scale_x_date(date_labels = " %b %d") + theme(axis.text.x = element_text(angle = 0)) 
     windplot1
   })
+  
+  pickPac <- reactive({
+    temp2maxwind <- temp2maxwind[temp2maxwind$Year == input$PacificPick,]
+    temp2maxwind
+  })
+  
+  output$PacificPlot <- renderPlot({
+    r <- aggregate(pickPac()$MaxWind~pickPac()$Date,pickPac(), max)
+    colnames(r) <- c('date', 'wind')
+    r$wind <- as.integer(r$wind)
+    windplot <- ggplot(r, aes(x= date, y= wind))  + geom_point() + geom_line(color='red') + scale_x_date(date_labels = " %b %d") + theme(axis.text.x = element_text(angle = 0)) 
+    windplot
+  })
+  
+  output$AtlPacPlot <- renderPlot({
+    r <- aggregate(pickPac()$MaxWind~pickPac()$Date,pickPac(), max)
+    colnames(r) <- c('date', 'wind')
+    r$wind <- as.integer(r$wind)
+    
+    r1 <- aggregate(pickAtl()$MaxWind~pickAtl()$Date,pickAtl(), max)
+    colnames(r1) <- c('date', 'wind')
+    r1$wind <- as.integer(r1$wind)
+    
+    
+    both <- ggplot() + 
+      geom_line(data=r, aes(x=date, y=wind), color='red') + 
+      geom_line(data=r1, aes(x=date, y=wind), color='blue') + 
+      geom_point() + 
+      scale_x_date(date_labels = " %b %d") + 
+      theme(axis.text.x = element_text(angle = 0))
+    both 
+  })    
   
 }
 
