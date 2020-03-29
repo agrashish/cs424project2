@@ -157,6 +157,8 @@ rawdata2ndFile$DateandTimes <- as.POSIXct(paste(rawdata2ndFile$Date, rawdata2ndF
 #clear up data a bit
 rawdata2ndFile$DateandTimes <- as.character(rawdata2ndFile$DateandTimes)
 
+rawdata2ndFile$factors <- as.factor(rawdata2ndFile$Hurricane)
+
 ######################################
 
 ui <- dashboardPage(
@@ -165,9 +167,9 @@ ui <- dashboardPage(
   dashboardBody(
     fluidRow(
       #Atlantic Map
-      box(width = 6, title = "Atlantic Hurricane Map", selectInput("pickFilter", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10")), uiOutput("picker"),leafletOutput("atlanticMap"),)
+      box(width = 6, title = "Atlantic Hurricane Map", selectInput("pickFilter", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10")), uiOutput("picker"),leafletOutput("atlanticMap"),),
       #Pacific Map
-      
+      box(width = 6, title = "Pacific Hurricane Map", selectInput("pickFilter2", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10")), uiOutput("picker2"),leafletOutput("pacificMap"),)
     ),
     fluidRow(
       #Atlantic
@@ -211,6 +213,8 @@ ui <- dashboardPage(
 )
 
 server <- function(input, output) {
+  
+  #If User selected a certain option do something to Atlantic map
   output$picker <- renderUI({
     if(input$pickFilter == "Year") {
       selectInput("userFilter", "Select Year", choices = years)
@@ -223,6 +227,20 @@ server <- function(input, output) {
     }
   })
   
+  #If user selected a certain option do something to Pacific Map
+  output$picker2 <- renderUI({
+    if(input$pickFilter2 == "Year") {
+      selectInput("userFilter2", "Select Year", choices = years)
+    }
+    else if(input$pickFilter2 == "Individual") {
+      selectInput("userFilter2", "Select Hurricane", choices = names)
+    }
+    else {
+      
+    }
+  })
+  
+  #For the antlantic map
   rawdataFiltered <- reactive({
     if(input$pickFilter == "Current Season") {
       rawdataFiltered <- rawdata[rawdata$Year == 2018,]
@@ -242,15 +260,49 @@ server <- function(input, output) {
     rawdataFiltered
   })  
   
+  #For the Pacific Map
+  rawdataFiltered2 <- reactive({
+    if(input$pickFilter2 == "Current Season") {
+      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Year == 2018,]
+    }
+    else if(input$pickFilter2 == "All") {
+      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Year >= 2005,]
+    }
+    else if(input$pickFilter2 == "Year") {
+      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Year == input$userFilter2,]
+    }
+    else if(input$pickFilter2 == "Individual") {
+      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Name == input$userFilter2,]
+    }
+    else if(input$pickFilter2 == "Top 10") {
+      rawdataFiltered2 <- top10
+    }
+    rawdataFiltered2
+  })  
+  
+  #Map for the atlantic data
   output$atlanticMap <- renderLeaflet({
     map <- leaflet()
     map <- addTiles(map)
     pal <- colorFactor(topo.colors(length(unique(rawdata$Hurricane))), rawdata$factors)
     map <- addCircleMarkers(map = map, data = rawdataFiltered(), group = ~Name, lat = ~Lat, lng = ~Long, color = ~pal(factors), radius = ~2*log(MaxWind))
     for(factor in levels(rawdataFiltered()$factors)) {
-      map <- addPolylines(map, data=rawdataFiltered()[rawdataFiltered()$factors==factor,], lat=~Lat, lng=~Long, color = ~pal(factors), weight = 1, group = ~Name)
+      map <- addPolylines(map, data=rawdataFiltered()[rawdataFiltered()$factors==factor,], lat=~Lat, lng=~Long, color = ~pal(factors), weight = ~2*log(MaxWind), group = ~Name)
     }
     map <- addLayersControl(map = map, overlayGroups = rawdataFiltered()$Name)
+    map
+  })
+  
+  #Map for the pacific data
+  output$pacificMap <- renderLeaflet({
+    map <- leaflet()
+    map <- addTiles(map)
+    pal <- colorFactor(topo.colors(length(unique(rawdata2ndFile$Hurricane))), rawdata2ndFile$factors)
+    map <- addCircleMarkers(map = map, data = rawdataFiltered2(), group = ~Name, lat = ~Lat, lng = ~Long, color = ~pal(factors), radius = ~2*log(MaxWind))
+    for(factor in levels(rawdataFiltered2()$factors)) {
+      map <- addPolylines(map, data=rawdataFiltered2()[rawdataFiltered2()$factors==factor,], lat=~Lat, lng=~Long, color = ~pal(factors), weight = ~2*log(MaxWind), group = ~Name)
+    }
+    map <- addLayersControl(map = map, overlayGroups = rawdataFiltered2()$Name)
     map
   })
   
