@@ -199,7 +199,27 @@ ui <- dashboardPage(
   dashboardBody(
     fluidRow(
       #Atlantic Map
-      box(width = 6, title = "Atlantic Hurricane Map", selectInput("pickFilter", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10")), uiOutput("picker"),leafletOutput("atlanticMap"),),
+      box(
+        width = 6, 
+        title = "Atlantic Hurricane Map", 
+        selectInput(
+          "pickFilter", 
+          "Select How to Filter Hurricanes (since 2005): ", 
+          choices = c("Current Season", "All", "Year", "Individual", "Top 10")
+        ),
+        checkboxInput(
+          "filterByLandfall",
+          "Filter by Landfall?",
+          value = FALSE
+        ),
+        checkboxInput(
+          "madeLandfall",
+          "Made Landfall?",
+          value = FALSE
+        ),
+        uiOutput("picker"),
+        leafletOutput("atlanticMap")
+      ),
       #Pacific Map
       box(width = 6, title = "Pacific Hurricane Map", selectInput("pickFilter2", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10")), uiOutput("picker2"),leafletOutput("pacificMap"),)
     ),
@@ -278,17 +298,26 @@ server <- function(input, output) {
   
   #For the antlantic map
   rawdataFiltered <- reactive({
+    rawdataTemp <- rawdata
+    if(input$filterByLandfall == TRUE) {
+      if(input$madeLandfall == FALSE) {
+        rawdataTemp <- rawdataTemp[which(rawdataTemp$Landfall == FALSE),]
+      }
+      else {
+        rawdataTemp <- rawdataTemp[which(rawdataTemp$Landfall == TRUE),]
+      }
+    }
     if(input$pickFilter == "Current Season") {
-      rawdataFiltered <- rawdata[rawdata$Year == 2018,]
+      rawdataFiltered <- rawdataTemp[rawdataTemp$Year == 2018,]
     }
     else if(input$pickFilter == "All") {
-      rawdataFiltered <- rawdata[rawdata$Year >= 2005,]
+      rawdataFiltered <- rawdataTemp[rawdataTemp$Year >= 2005,]
     }
     else if(input$pickFilter == "Year") {
-      rawdataFiltered <- rawdata[rawdata$Year == input$userFilter,]
+      rawdataFiltered <- rawdataTemp[rawdataTemp$Year == input$userFilter,]
     }
     else if(input$pickFilter == "Individual") {
-      rawdataFiltered <- rawdata[rawdata$Name == input$userFilter,]
+      rawdataFiltered <- rawdataTemp[rawdataTemp$Name == input$userFilter,]
     }
     else if(input$pickFilter == "Top 10") {
       rawdataFiltered <- top10

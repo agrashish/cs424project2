@@ -1,4 +1,6 @@
 # just add the header and clean some whitespaces in each file
+# since data for each hurricane can span multiple lines, 
+# we will make the hurricane identifiying columns added to every single row that belonngs to each hurricane
 # that's pretty much all our preprocessing does
 
 
