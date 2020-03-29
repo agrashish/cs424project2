@@ -93,6 +93,17 @@ rawdata$DateandTimes <- as.POSIXct(paste(rawdata$Date, rawdata$Hour, rawdata$Min
 #clear up data a bit
 rawdata$DateandTimes <- as.character(rawdata$DateandTimes)
 
+#add landfall info
+landfalls = rawdata$Hurricane[rawdata$RecordID == " L"]
+rawdata$Landfall <- lapply(rawdata$Hurricane, function(x) {
+  if (x %in% landfalls) {
+    TRUE
+  }
+  else {
+    FALSE
+  }
+})
+
 #get top 10 list
 temp <- rawdata[rev(order(rawdata$MaxWind)),]
 temp <- head(temp[!duplicated(temp["Hurricane"]),],10)
