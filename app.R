@@ -26,13 +26,20 @@ rawdata$Long <- as.character(rawdata$Long)
 ############ivans data frame
 newtestdata1stFile <- rawdata
 
-temp1maxwind <- newtestdata1stFile[rev(order(newtestdata1stFile$MaxWind)),]
+temp1maxwind <- newtestdata1stFile
 temp1maxwind$Date <- as.character(temp1maxwind$Date)
 temp1maxwind$Date <- as.Date(temp1maxwind[["Date"]], "%Y%m%d")
-
 temp1maxwind$Year <- as.numeric(format(temp1maxwind$Date,'%Y'))
 temp1maxwind$Month <- as.numeric(format(temp1maxwind$Date,'%m'))
 temp1maxwind$Day <- as.numeric(format(temp1maxwind$Date,'%d'))
+
+tempPress1 <- rawdata
+tempPress1$Date <- as.character(tempPress1$Date)
+tempPress1$Date <- as.Date(tempPress1[["Date"]], "%Y%m%d")
+tempPress1$AYear <- as.numeric(format(tempPress1$Date,'%Y'))
+tempPress1$AMonth <- as.numeric(format(tempPress1$Date,'%m'))
+tempPress1$ADay <- as.numeric(format(tempPress1$Date,'%d'))
+tempPress1 <- tempPress1[tempPress1$MinPress!=-999, ]
 
 #replace lat strings with 'N' or 'S' to proper numeric
 rawdata$Lat <- sapply(rawdata$Lat, function(x) {
@@ -138,10 +145,17 @@ newtestdata2ndFile <- rawdata2ndFile
 temp2maxwind <- newtestdata2ndFile
 temp2maxwind$Date <- as.character(temp2maxwind$Date)
 temp2maxwind$Date <- as.Date(temp2maxwind[["Date"]], "%Y%m%d")
-
 temp2maxwind$Year <- as.numeric(format(temp2maxwind$Date,'%Y'))
 temp2maxwind$Month <- as.numeric(format(temp2maxwind$Date,'%m'))
 temp2maxwind$Day <- as.numeric(format(temp2maxwind$Date,'%d'))
+
+tempPress2 <- rawdata2ndFile
+tempPress2$Date <- as.character(tempPress2$Date)
+tempPress2$Date <- as.Date(tempPress2[["Date"]], "%Y%m%d")
+tempPress2$AYear <- as.numeric(format(tempPress2$Date,'%Y'))
+tempPress2$AMonth <- as.numeric(format(tempPress2$Date,'%m'))
+tempPress2$ADay <- as.numeric(format(tempPress2$Date,'%d'))
+tempPress2 <- tempPress2[tempPress2$MinPress!=-999, ]
 
 #get the year of the hurricane from the start string
 rawdata2ndFile$Year = lapply(rawdata2ndFile$Hurricane, function(x){
@@ -264,7 +278,11 @@ ui <- dashboardPage(
     fluidRow(box(width = 4, title= "Atlantic Max windSpeeds", selectInput("AtlanticPick", "Select Year",choices = c(unique(temp1maxwind$Year))),plotOutput("AtlanticPlot") ),
              box(width = 4, title = "Atlantic and Pacific Max WindSpeed",plotOutput("AtlPacPlot")),
              box(width = 4, title= "Pacific Max windSpeeds", selectInput("PacificPick", "Select Year",choices = c(unique(temp2maxwind$Year))),plotOutput("PacificPlot"))
-             )
+             ),
+    fluidRow(box(width = 4, title= "Atlantic MinPressure", selectInput("AtlanticPressurePick", "Select Year",choices = c(unique(tempPress1$AYear))),plotOutput("AtlanticPressurePlot") ),
+             box(width = 4, title = "Atlantic and Pacific MinPressure",plotOutput("AtlPacPressurePlot")),
+             box(width = 4, title= "Pacific MinPressure", selectInput("PacificPressurePick", "Select Year",choices = c(unique(tempPress2$AYear))),plotOutput("PacificPressurePlot"))
+    )
   )
 )
 
@@ -586,7 +604,52 @@ server <- function(input, output) {
       scale_x_date(date_labels = " %b %d") + 
       theme(axis.text.x = element_text(angle = 0))
     both 
-  })    
+  })
+  #next are for Pressure line plots
+  pickAtlPress <- reactive({
+    tempPress1 <- tempPress1[tempPress1$AYear == input$AtlanticPressurePick,]
+    tempPress1
+  })
+  
+  output$AtlanticPressurePlot <- renderPlot({
+    p1 <- aggregate(pickAtlPress()$MinPress~pickAtlPress()$Date,pickAtlPress(), min)
+    colnames(p1) <- c('date', 'pressure')
+    p1$pressure <- as.integer(p1$pressure)
+    pressureplot1 <- ggplot(p1, aes(x= date, y= pressure))  + geom_point() + geom_line(color='blue') + scale_x_date(date_labels = " %b %d") + theme(axis.text.x = element_text(angle = 0)) 
+    pressureplot1
+  })
+  
+  pickPacPress <- reactive({
+    tempPress2 <- tempPress2[tempPress2$AYear == input$PacificPressurePick,]
+    tempPress2
+  })
+  
+  output$PacificPressurePlot <- renderPlot({
+    p2 <- aggregate(pickPacPress()$MinPress~pickPacPress()$Date,pickPacPress(), min)
+    colnames(p2) <- c('date', 'pressure')
+    p2$pressure <- as.integer(p2$pressure)
+    pressureplot2 <- ggplot(p2, aes(x= date, y= pressure))  + geom_point() + geom_line(color='red') + scale_x_date(date_labels = " %b %d") + theme(axis.text.x = element_text(angle = 0)) 
+    pressureplot2
+  })
+  
+  output$AtlPacPressurePlot <- renderPlot({
+    p2 <- aggregate(pickPacPress()$MinPress~pickPacPress()$Date,pickPacPress(), min)
+    colnames(p2) <- c('date', 'pressure')
+    p2$pressure <- as.integer(p2$pressure)
+    
+    p1 <- aggregate(pickAtlPress()$MinPress~pickAtlPress()$Date,pickAtlPress(), min)
+    colnames(p1) <- c('date', 'pressure')
+    p1$pressure <- as.integer(p1$pressure)
+    
+    
+    both <- ggplot() + 
+      geom_line(data=p2, aes(x=date, y=pressure), color='red') + 
+      geom_line(data=p1, aes(x=date, y=pressure), color='blue') + 
+      geom_point() + 
+      scale_x_date(date_labels = " %b %d") + 
+      theme(axis.text.x = element_text(angle = 0))
+    both 
+  })
   
 }
 
