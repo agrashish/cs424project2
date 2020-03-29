@@ -230,7 +230,7 @@ ui <- dashboardPage(
           )
       )
     ),
-    fluidRow(box(width = 4, title= "Atlantic Max windSpeeds", selectInput("AtlanticPick", "Select Year",choices = c(unique(temp1maxwind$Year))),DT::dataTableOutput("AtlanticPlot") ),
+    fluidRow(box(width = 4, title= "Atlantic Max windSpeeds", selectInput("AtlanticPick", "Select Year",choices = c(unique(temp1maxwind$Year))),plotOutput("AtlanticPlot") ),
              box(width = 4, title = "Atlantic and Pacific Max WindSpeed",DT::dataTableOutput("AtlPacPlot")),
              box(width = 4, title= "Pacific Max windSpeeds", selectInput("PacificPick", "Select Year",choices = c(unique(temp2maxwind$Year))),DT::dataTableOutput("PacificPlot"))
              )
@@ -465,14 +465,13 @@ server <- function(input, output) {
   
   pickAtl <- reactive({
     temp1maxwind <- temp1maxwind[temp1maxwind$Year == input$AtlanticPick,]
+    temp1maxwind
   })
   
   output$AtlanticPlot <- renderPlot({
-    r1 <- aggregate(pickAtl$MaxWind~pickAtl$Date,pickAtl, max)
+    r1 <- aggregate(pickAtl()$MaxWind~pickAtl()$Date,pickAtl(), max)
     colnames(r1) <- c('date', 'wind')
     r1$wind <- as.integer(r1$wind)
-    #r
-    
     windplot1 <- ggplot(r1, aes(x= date, y= wind))  + geom_point() + geom_line(color='blue') + scale_x_date(date_labels = " %b %d") + theme(axis.text.x = element_text(angle = 0)) 
     windplot1
   })
