@@ -219,7 +219,7 @@ ui <- dashboardPage(
         selectInput(
           "pickFilter", 
           "Select How to Filter Hurricanes (since 2005): ", 
-          choices = c("Current Season", "All", "Year", "Individual", "Top 10", "Max Wind Speed", "Minimum Pressure")
+          choices = c("Current Season", "All", "Year", "Individual", "Top 10", "Max Wind Speed", "Minimum Pressure", "Day")
         ),
         checkboxInput(
           "filterByLandfall",
@@ -296,6 +296,9 @@ server <- function(input, output) {
     else if(input$pickFilter == "Individual") {
       selectInput("userFilter", "Select Hurricane", choices = names)
     }
+    else if(input$pickFilter == "Day") {
+      dateInput("userFilter", "Date: ", value = "2002-09-10", format = "mm/dd/yy")
+    }
     else {
       
     }
@@ -339,6 +342,18 @@ server <- function(input, output) {
     }
     else if(input$pickFilter == "Top 10") {
       rawdataFiltered <- top10
+    }
+    else if (input$pickFilter == "Day"){
+      days = rawdataTemp$Hurricane[rawdataTemp$Date == input$userFilter]
+      rawdataTemp$isDay <- lapply(rawdataTemp$Hurricane, function(x) {
+        if (x %in% days) {
+          TRUE
+        }
+        else {
+          FALSE
+        }
+      })
+      rawdataFiltered <- rawdataTemp[which(rawdataTemp$isDay == TRUE),]
     }
     else if(input$pickFilter == "Max Wind Speed"){
       mWindSpeed <- as.data.frame(lapply(rawdata, unlist))
