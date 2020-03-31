@@ -137,8 +137,20 @@ rawdata2ndFile$Hurricane <- as.character(rawdata2ndFile$Hurricane)
 rawdata2ndFile$Name <- as.character(rawdata2ndFile$Name)
 rawdata2ndFile$RecordID <- as.character(rawdata2ndFile$RecordID)
 rawdata2ndFile$Status <- as.character(rawdata2ndFile$Status)
-rawdata2ndFile$Lat <- as.numeric(rawdata2ndFile$Lat)
-rawdata2ndFile$Long <- as.numeric(rawdata2ndFile$Long)
+rawdata2ndFile$Lat <- as.character(rawdata2ndFile$Lat)
+rawdata2ndFile$Long <- as.character(rawdata2ndFile$Long)
+
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP012006"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP012008"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP022009"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP012010"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP012013"),]     
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP032013"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "EP072014"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP012015"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP032015"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "CP092015"),]
+rawdata2ndFile <- rawdata2ndFile[which(rawdata2ndFile$Hurricane != "EP102018"),]
 
 #Ivans data Frame
 newtestdata2ndFile <- rawdata2ndFile
@@ -157,6 +169,26 @@ tempPress2$AMonth <- as.numeric(format(tempPress2$Date,'%m'))
 tempPress2$ADay <- as.numeric(format(tempPress2$Date,'%d'))
 tempPress2 <- tempPress2[tempPress2$MinPress!=-999, ]
 
+#replace lat strings with 'N' or 'S' to proper numeric
+rawdata2ndFile$Lat <- sapply(rawdata2ndFile$Lat, function(x) {
+  if(substr(x,nchar(x),nchar(x))[1] == 'N') {
+    as.numeric(substr(x,0,nchar(x)-1))
+  }
+  else {
+    - as.numeric(substr(x,0,nchar(x)-1))
+  }
+})
+
+#replace long strings with 'E' or 'W' to proper numeric
+rawdata2ndFile$Long <- sapply(rawdata2ndFile$Long, function(x) {
+  if(substr(x,nchar(x),nchar(x))[1] == 'E') {
+    as.numeric(substr(x,0,nchar(x)-1))
+  }
+  else {
+    - as.numeric(substr(x,0,nchar(x)-1))
+  }
+})
+
 #get the year of the hurricane from the start string
 rawdata2ndFile$Year = lapply(rawdata2ndFile$Hurricane, function(x){
   as.integer(substr(x,nchar(x)-3,nchar(x)))
@@ -164,6 +196,14 @@ rawdata2ndFile$Year = lapply(rawdata2ndFile$Hurricane, function(x){
 
 #trim the whitespaces from the name
 rawdata2ndFile$Name <- lapply(rawdata2ndFile$Name, trimws)
+
+#make unnamed hurricanes display their year and number
+rawdata2ndFile$Name <- 
+  paste(rawdata2ndFile$Name,
+        " (", 
+        rawdata2ndFile$Hurricane, 
+        ")"
+  )
 
 #get the cyclone number of the hurricane from the start string
 rawdata2ndFile$CycNum <- lapply(rawdata2ndFile$Hurricane, function(x){
@@ -205,6 +245,17 @@ rawdata2ndFile$DateandTimes <- as.character(rawdata2ndFile$DateandTimes)
 
 rawdata2ndFile$factors <- as.factor(rawdata2ndFile$Hurricane)
 
+#add landfall info
+landfalls2 = rawdata2ndFile$Hurricane[rawdata2ndFile$RecordID == " L"]
+rawdata2ndFile$Landfall <- lapply(rawdata2ndFile$Hurricane, function(x) {
+  if (x %in% landfalls2) {
+    TRUE
+  }
+  else {
+    FALSE
+  }
+})
+
 ######################################
 
 ui <- dashboardPage(
@@ -235,7 +286,26 @@ ui <- dashboardPage(
         leafletOutput("atlanticMap")
       ),
       #Pacific Map
-      box(width = 6, title = "Pacific Hurricane Map", selectInput("pickFilter2", "Select How to Filter Hurricanes (since 2005): ", choices = c("Current Season", "All", "Year", "Individual", "Top 10", "Max Wind Speed", "Minimum Pressure")), uiOutput("picker2"),leafletOutput("pacificMap"),)
+      box(
+        width = 6, 
+        title = "Pacific Hurricane Map", 
+        selectInput(
+          "pickFilter2", 
+          "Select How to Filter Hurricanes (since 2005): ", 
+          choices = c("Current Season", "All", "Year", "Individual", "Top 10", "Max Wind Speed", "Minimum Pressure")
+        ),
+        checkboxInput(
+          "filterByLandfall2",
+          "Filter by Landfall?",
+          value = FALSE
+        ),
+        checkboxInput(
+          "madeLandfall2",
+          "Made Landfall?",
+          value = FALSE
+        ),
+        uiOutput("picker2"),
+        leafletOutput("pacificMap"),)
     ),
     fluidRow(
       #Atlantic
@@ -379,23 +449,32 @@ server <- function(input, output) {
   
   #For the Pacific Map
   rawdataFiltered2 <- reactive({
+    rawdataTemp <- rawdata2ndFile
+    if(input$filterByLandfall2 == TRUE) {
+      if(input$madeLandfall2 == FALSE) {
+        rawdataTemp <- rawdataTemp[which(rawdataTemp$Landfall == FALSE),]
+      }
+      else {
+        rawdataTemp <- rawdataTemp[which(rawdataTemp$Landfall == TRUE),]
+      }
+    }
     if(input$pickFilter2 == "Current Season") {
-      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Year == 2018,]
+      rawdataFiltered2 <- rawdataTemp[rawdataTemp$Year == 2018,]
     }
     else if(input$pickFilter2 == "All") {
-      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Year >= 2005,]
+      rawdataFiltered2 <- rawdataTemp[rawdataTemp$Year >= 2005,]
     }
     else if(input$pickFilter2 == "Year") {
-      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Year == input$userFilter2,]
+      rawdataFiltered2 <- rawdataTemp[rawdataTemp$Year == input$userFilter2,]
     }
     else if(input$pickFilter2 == "Individual") {
-      rawdataFiltered2 <- rawdata2ndFile[rawdata2ndFile$Name == input$userFilter2,]
+      rawdataFiltered2 <- rawdataTemp[rawdataTemp$Name == input$userFilter2,]
     }
     else if(input$pickFilter2 == "Top 10") {
       rawdataFiltered2 <- top10
     }
     else if(input$pickFilter2 == "Max Wind Speed"){
-      mWindSpeed <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      mWindSpeed <- as.data.frame(lapply(rawdataTemp, unlist))
       attach(mWindSpeed)
       mWindSpeed <- mWindSpeed[order(-MaxWind),]
       detach(mWindSpeed)
@@ -404,8 +483,8 @@ server <- function(input, output) {
       rawdataFiltered2 <- mWindSpeed
     }
     else if(input$pickFilter2 == "Minimum Pressure"){
-      rawdata2ndFile <- rawdata2ndFile[rawdata2ndFile$MinPress > 0,]
-      mPressure <- as.data.frame(lapply(rawdata2ndFile, unlist))
+      rawdataTemp <- rawdataTemp[rawdataTemp$MinPress > 0,]
+      mPressure <- as.data.frame(lapply(rawdataTemp, unlist))
       attach(mPressure)
       mPressure <- mPressure[order(MinPress),]
       detach(mPressure)
