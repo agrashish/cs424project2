@@ -209,7 +209,16 @@ rawdata2ndFile$factors <- as.factor(rawdata2ndFile$Hurricane)
 
 ui <- dashboardPage(
   dashboardHeader(title = "CS 424 Project 2"),
-  dashboardSidebar(),
+  dashboardSidebar(
+    width = 300,
+    sidebarMenu(
+      menuItem("Dashboard", tabName ="dashboard", icon = icon("dashboard")),
+      menuItem("Page Info",tabName = "til", startExpanded = F, textOutput("il"), textOutput("il2"),textOutput("il3"), textOutput("il4")),
+      menuItem("Infromation on file format",tabName = "lit",startExpanded = F, textOutput("li"))
+      
+      
+    )
+  ),
   dashboardBody(
     fluidRow(
       #Atlantic Map
@@ -664,6 +673,32 @@ server <- function(input, output) {
       scale_x_date(date_labels = " %b %d") + 
       theme(axis.text.x = element_text(angle = 0))
     both 
+  })
+  
+  output$li <- renderText({
+    #total litter text
+    text2 <- as.character("www.aoml.noaa.gov/hrd/hurdat/hurdat2-format-may2015.pdf")
+    text2
+  })
+  output$il <- renderText({
+    ##about this project
+    text1 <- as.character("Coded By: Ivan M., Richard M., Aashish A.")
+    text1
+  })
+  output$il2 <- renderText({
+    ##about this project
+    text3 <- as.character("Libraries: shiny,shinydashboard,leaflet,ggplot2")
+    text3
+  })
+  output$il3 <- renderText({
+    ##about this project
+    text3 <- as.character("Data_Source:")
+    text3
+  })
+  output$il4 <- renderText({
+    ##about this project
+    text3 <- as.character("http://www.nhc.noaa.gov/data/#hurdat")
+    text3
   })
   
 }
